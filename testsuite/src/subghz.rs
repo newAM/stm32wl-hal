@@ -102,9 +102,10 @@ fn tx_or_panic(sg: &mut MySubghz, rfs: &mut RfSwitch) {
     unwrap!(sg.set_tx(Timeout::DISABLED));
     let start_cc: u32 = DWT::cycle_count();
     loop {
-        let status: Status = unwrap!(sg.status());
-        if status.cmd() == Ok(CmdStatus::Complete) {
+        let (status, irq_status): (Status, u16) = unwrap!(sg.irq_status());
+        if irq_status & Irq::TxDone.mask() != 0 {
             rfs.set_rx();
+            unwrap!(sg.clear_irq_status(irq_status));
             defmt::info!("TX done");
             break;
         }
